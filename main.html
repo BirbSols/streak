@@ -55,16 +55,19 @@
     </div>
 
     <script>
-        // JavaScript for app functionality
         const streakEl = document.getElementById('streak');
         const incrementBtn = document.getElementById('increment');
         const resetBtn = document.getElementById('reset');
         const setReminderBtn = document.getElementById('setReminder');
         const reminderTimeInput = document.getElementById('reminderTime');
 
-        // Load streak from local storage
+        // Load streak and reminder time from localStorage
         let streak = parseInt(localStorage.getItem('streak')) || 0;
+        let reminderTime = localStorage.getItem('reminderTime') || '';
+
+        // Initialize the UI
         streakEl.textContent = streak;
+        reminderTimeInput.value = reminderTime;
 
         // Increment streak
         incrementBtn.addEventListener('click', () => {
@@ -80,45 +83,40 @@
             streakEl.textContent = streak;
         });
 
+        // Set reminder
+        setReminderBtn.addEventListener('click', () => {
+            reminderTime = reminderTimeInput.value;
+            localStorage.setItem('reminderTime', reminderTime);
+            if (!reminderTime) {
+                alert('Please set a time for the reminder.');
+                return;
+            }
+            alert(`Reminder set for ${reminderTime}`);
+        });
+
         // Request Notification permission
         if (Notification.permission === 'default') {
             Notification.requestPermission();
         }
 
-        // Set reminder
-        setReminderBtn.addEventListener('click', () => {
-            const reminderTime = reminderTimeInput.value;
-            if (!reminderTime) {
-                alert('Please set a time for the reminder.');
-                return;
-            }
+        // Reminder notifications
+        function checkReminder() {
+            if (!reminderTime) return;
 
+            const now = new Date();
             const [hours, minutes] = reminderTime.split(':').map(Number);
-
-            function scheduleNotification() {
-                const now = new Date();
-                const reminderDate = new Date();
-                reminderDate.setHours(hours, minutes, 0, 0);
-
-                if (reminderDate < now) {
-                    reminderDate.setDate(reminderDate.getDate() + 1);
+            if (now.getHours() === hours && now.getMinutes() === minutes) {
+                if (Notification.permission === 'granted') {
+                    new Notification('Streak Reminder', {
+                        body: "Don't forget to update your streak!",
+                        icon: 'https://via.placeholder.com/64' // Add an icon URL if desired
+                    });
                 }
-
-                const timeout = reminderDate - now;
-                setTimeout(() => {
-                    if (Notification.permission === 'granted') {
-                        new Notification('Streak Reminder', {
-                            body: "Don't forget to update your streak!",
-                            icon: 'https://via.placeholder.com/64' // Add an icon URL here
-                        });
-                    }
-                    scheduleNotification(); // Reschedule for next day
-                }, timeout);
             }
+        }
 
-            scheduleNotification();
-            alert(`Reminder set for ${reminderTime}`);
-        });
+        // Check the reminder every minute
+        setInterval(checkReminder, 60000);
     </script>
 </body>
 </html>
